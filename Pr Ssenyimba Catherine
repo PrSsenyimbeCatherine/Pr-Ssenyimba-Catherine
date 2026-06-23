@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pr Ssenyimba Catherine Music</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #121212;
+    color: white;
+}
+
+.header {
+    text-align: center;
+    padding: 20px;
+    background: #000;
+}
+
+.header img {
+    width: 120px;
+    border-radius: 50%;
+}
+
+.header h1 {
+    margin: 10px 0 5px;
+}
+
+.header p {
+    color: #aaa;
+}
+
+.section {
+    padding: 15px;
+}
+
+.song-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+    gap: 10px;
+}
+
+.card {
+    background: #181818;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+button {
+    margin-top: 5px;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.play {
+    background: #1db954;
+    color: white;
+}
+
+.upload {
+    background: #333;
+    color: white;
+}
+
+.player {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #000;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.ad {
+    background: #222;
+    text-align: center;
+    padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- PROFILE -->
+<div class="header">
+    <img src="cover.jpg">
+    <h1>Pr Ssenyimba Catherine</h1>
+    <p>Gospel Artist • Worship Leader • 150+ Songs</p>
+</div>
+
+<div class="ad">🔥 Advertise Here (Controlled by You)</div>
+
+<!-- SONG LIST -->
+<div class="section">
+    <h2>🎧 Songs</h2>
+    <div class="song-list" id="songs"></div>
+</div>
+
+<!-- PLAYER -->
+<div class="player">
+    <div id="now">No song playing</div>
+    <button onclick="togglePlay()">▶ Play/Pause</button>
+</div>
+
+<!-- ADMIN -->
+<div class="section">
+    <h2>🎛 Admin Upload</h2>
+    <input id="title" placeholder="Song title">
+    <input type="file" id="file">
+    <button class="upload" onclick="uploadSong()">Upload Song</button>
+</div>
+
+<audio id="audio"></audio>
+
+<script type="module">
+
+// 🔥 FIREBASE CONFIG (PASTE YOURS HERE)
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_ID",
+  appId: "YOUR_APP_ID"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+const db = getFirestore(app);
+
+let audio = document.getElementById("audio");
+
+// 🎵 LOAD SONGS
+async function loadSongs() {
+    const querySnapshot = await getDocs(collection(db, "songs"));
+    const container = document.getElementById("songs");
+
+    container.innerHTML = "";
+
+    querySnapshot.forEach(doc => {
+        const song = doc.data();
+
+        const div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+            <p>${song.title}</p>
+            <button class="play">▶ Play</button>
+        `;
+
+        div.querySelector(".play").onclick = () => {
+            audio.src = song.url;
+            document.getElementById("now").innerText = song.title;
+            audio.play();
+        };
+
+        container.appendChild(div);
+    });
+}
+
+loadSongs();
+
+// ⬆ UPLOAD SONG (ADMIN)
+window.uploadSong = async function () {
+    const file = document.getElementById("file").files[0];
+    const title = document.getElementById("title").value;
+
+    if (!file || !title) {
+        alert("Fill all fields");
+        return;
+    }
+
+    const storageRef = ref(storage, "songs/" + file.name);
+    await uploadBytes(storageRef, file);
+
+    const url = await getDownloadURL(storageRef);
+
+    await addDoc(collection(db, "songs"), {
+        title: title,
+        url: url
+    });
+
+    alert("Uploaded successfully 🔥");
+    loadSongs();
+};
+
+// ▶ PLAY/PAUSE
+window.togglePlay = function () {
+    if (audio.paused) audio.play();
+    else audio.pause();
+};
+
+</script>
+
+</body>
+</html>
